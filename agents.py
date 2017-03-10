@@ -25,6 +25,12 @@ class AgentEpsGreedy:
     def eval_valid(self, states, targets, dropout_probability):
         return self.value_func.eval_valid(states, targets, dropout_probability)
 
+
+
+    def eval_valid_trial(self, states, targets, dropout_probability):
+        return self.value_func.eval_valid_trial(states, targets, dropout_probability)
+
+
     def predict_q_values(self, states):
         return self.value_func.predict(states)
 
