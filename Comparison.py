@@ -11,13 +11,8 @@ eps = 2000
 eps = range(eps)
 
 
-EpsGreedy = np.load('Cum_Rwd_Only_Epsilon_Greedy_0.npy')
-OnlyDropout = np.load('Cum_Rwd_Only_Train_Dropout_0.npy')
-Boltzmann = np.load('Cum_Rwd_Only_Boltzmann_0.npy')
-Random = np.load('Cum_Rwd_Only_Random.npy')
-
-Dropout_Boltzmann = np.load('Cum_Rwd_MC_Dropout_Boltzmann0.npy')
-Dropout_Epsilon_Greedy = np.load('Cum_Rwd_MCDropout_Mean_EpsilonGreedy_1.npy')
+Boltzmann = np.load('/Users/Riashat/Documents/PhD_Research/BASIC_ALGORITHMS/My_Implementations/Exploration_DQN/All_Results/Average_Cum_Rwd_Boltzmann_Exploration_.npy')
+Epsilon = np.load('/Users/Riashat/Documents/PhD_Research/BASIC_ALGORITHMS/My_Implementations/Exploration_DQN/All_Results/Average_Cum_Rwd_Only_Epsilon_Greedy_.npy')
 
 
 
@@ -44,31 +39,21 @@ def single_plot_episode_stats(stats, eps,  smoothing_window=50, noshow=False):
 
 
 
-def multiple_plot_episode_stats(stats1, stats3,  stats4, stats5, stats6, eps,  smoothing_window=200, noshow=False):
-
+def multiple_plot_episode_stats(stats1, stats2,  eps,  smoothing_window=200, noshow=False):
 
     fig = plt.figure(figsize=(30, 20))
     rewards_smoothed_1 = pd.Series(stats1).rolling(smoothing_window, min_periods=smoothing_window).mean()
-    # rewards_smoothed_2 = pd.Series(stats2).rolling(smoothing_window, min_periods=smoothing_window).mean()
-    rewards_smoothed_3 = pd.Series(stats3).rolling(smoothing_window, min_periods=smoothing_window).mean()
-    rewards_smoothed_4 = pd.Series(stats4).rolling(smoothing_window, min_periods=smoothing_window).mean()
-    rewards_smoothed_5 = pd.Series(stats5).rolling(smoothing_window, min_periods=smoothing_window).mean()
-    rewards_smoothed_6 = pd.Series(stats6   ).rolling(smoothing_window, min_periods=smoothing_window).mean()
+    rewards_smoothed_2 = pd.Series(stats2).rolling(smoothing_window, min_periods=smoothing_window).mean()
 
-    cum_rwd_1, = plt.plot(eps, rewards_smoothed_1, label="Epsilon Greedy")    
-    # cum_rwd_2, = plt.plot(eps, rewards_smoothed_2, label="Dropout in DQN")    
-    cum_rwd_3, = plt.plot(eps, rewards_smoothed_3, label="Boltzmann") 
-    cum_rwd_4, = plt.plot(eps, rewards_smoothed_4, label="Random") 
-    cum_rwd_5, = plt.plot(eps, rewards_smoothed_5, label="Dropout + Boltzmann") 
-    cum_rwd_6, = plt.plot(eps, rewards_smoothed_6, label="Dropout + Epsilon Greedy") 
+    cum_rwd_1, = plt.plot(eps, rewards_smoothed_1, label="Boltzmann Exploration")    
+    cum_rwd_2, = plt.plot(eps, rewards_smoothed_2, label="Epsilon Greedy Exploration")    
 
-    plt.legend(handles=[cum_rwd_1, cum_rwd_3, cum_rwd_4, cum_rwd_5, cum_rwd_6])
+    plt.legend(handles=[cum_rwd_1, cum_rwd_2])
+
     plt.xlabel("Epsiode")
     plt.ylabel("Epsiode Reward (Smoothed)")
-    plt.title("Comparing Exploration Strategies in DQN - Larger Network (Layer 1, 512 Units, Layer 2, 256 Units)")  
+    plt.title("Comparing Exploration Strategies in DQN")  
     plt.show()
-
-
 
     return fig
 
@@ -78,8 +63,8 @@ def multiple_plot_episode_stats(stats1, stats3,  stats4, stats5, stats6, eps,  s
 
 
 def main():
-	multiple_plot_episode_stats(EpsGreedy, Boltzmann, Random, Dropout_Boltzmann, Dropout_Epsilon_Greedy, eps)
-    #single_plot_episode_stats(Dropout_Boltzmann, eps)
+	multiple_plot_episode_stats(Boltzmann, Epsilon, eps)
+
 
 
 

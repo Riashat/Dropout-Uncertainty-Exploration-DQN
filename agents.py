@@ -34,17 +34,17 @@ class AgentEpsGreedy:
 
 
 
-    def predict_posterior_q_values(self, states):
-        dropout_iterations = 100
-        dropout_acton_values = np.array([[0, 0]]).T        
-        for d in range(dropout_iterations):
-            action_values = self.value_func.predict_posterior([states])[0]
-            action_values = np.array([action_values]).T
-            dropout_acton_values = np.append(dropout_acton_values, action_values, axis=1)
-        dropout_acton_values = dropout_acton_values[:, 1:].T
-        random_selection = np.random.randint(0,dropout_acton_values.shape[0],1)
-        sampled_Q_value = dropout_acton_values[random_selection]
-        return sampled_Q_value
+    # def predict_posterior_q_values(self, states):
+    #     dropout_iterations = 100
+    #     dropout_acton_values = np.array([[0, 0]]).T        
+    #     for d in range(dropout_iterations):
+    #         action_values = self.value_func.predict_posterior([states])[0]
+    #         action_values = np.array([action_values]).T
+    #         dropout_acton_values = np.append(dropout_acton_values, action_values, axis=1)
+    #     dropout_acton_values = dropout_acton_values[:, 1:].T
+    #     random_selection = np.random.randint(0,dropout_acton_values.shape[0],1)
+    #     sampled_Q_value = dropout_acton_values[random_selection]
+    #     return sampled_Q_value
 
 
     def dropout_highest_variance(self, state):
@@ -75,13 +75,6 @@ class AgentEpsGreedy:
 
 
 
-    def act_boltzmann(self, state):
-        action_values = self.value_func.predict([state])[0]
-        action_values_tau = action_values / self.eps
-        policy = np.exp(action_values_tau) / np.sum(np.exp(action_values_tau), axis=0)
-        action_value_to_take = np.argmax(policy)
-        return action_value_to_take
-
 
     def act_random(self, state):
         action = np.random.randint(0, self.n_actions)
@@ -108,9 +101,19 @@ class AgentEpsGreedy:
         actions_to_take = np.argmax(Q_dist)
         return actions_to_take
 
+
+    def act_boltzmann(self, state):
+        action_values = self.value_func.predict([state])[0]
+        action_values_tau = action_values / self.eps
+        policy = np.exp(action_values_tau) / np.sum(np.exp(action_values_tau), axis=0)
+        action_value_to_take = np.argmax(policy)
+        return action_value_to_take
+
+
+
     def act_mc_dropout_EpsilonGreedy(self, state):
 
-        dropout_iterations = 100
+        dropout_iterations = 1
         dropout_acton_values = np.array([[0, 0]]).T
 
         for d in range(dropout_iterations):
@@ -119,18 +122,34 @@ class AgentEpsGreedy:
             dropout_acton_values = np.append(dropout_acton_values, action_values, axis=1)
 
         dropout_acton_values = dropout_acton_values[:, 1:]
-
         mean_action_values = np.mean(dropout_acton_values, axis=1)
-
         policy = np.ones(self.n_actions) * self.eps / self.n_actions
-
         a_max = np.argmax(mean_action_values)
-
         policy[a_max] += 1. - self.eps
+        action = np.random.choice(self.n_actions, p=policy)
 
-        action_to_take = np.random.choice(self.n_actions, p=policy)
+        return action
 
-        return action_to_take
+
+
+    def get_action_stochastic_Epsilon_Thompson_Sampling(self, state, drop_prob):
+
+        dropout_iterations = 1
+        dropout_acton_values = np.array([[0, 0]]).T
+
+        for d in range(dropout_iterations):
+            action_values = self.value_func.predict_stochastic([state])[0]
+            action_values = np.array([action_values]).T
+            dropout_acton_values = np.append(dropout_acton_values, action_values, axis=1)
+
+        dropout_acton_values = dropout_acton_values[:, 1:]
+        mean_action_values = np.mean(dropout_acton_values, axis=1)
+        policy = np.ones(self.n_actions) * self.eps / self.n_actions
+        a_max = np.argmax(mean_action_values)
+        policy[a_max] += 1. - self.eps
+        action = np.random.choice(self.n_actions, p=policy)
+
+        return action
 
 
 
@@ -138,8 +157,11 @@ class AgentEpsGreedy:
     def get_action_stochastic_epsilon_greedy(self, state, drop_prob):
 
         if np.random.rand() < self.eps:
-            return np.random.randint(len(self.n_actions))
+
+            return np.random.randint(self.n_actions)
+
         else:
+
             dropout_iterations=1
             dropout_acton_values = np.array([range(self.n_actions)]).T
 
@@ -151,7 +173,7 @@ class AgentEpsGreedy:
             dropout_acton_values = dropout_acton_values[:, 1:]
             mean_action_values = np.mean(dropout_acton_values, axis=1)
 
-        return np.argmax(mean_action_values)
+            return np.argmax(mean_action_values)
 
 
 
@@ -159,6 +181,7 @@ class AgentEpsGreedy:
         
         dropout_iterations=1
         dropout_action_values = np.array([range(self.n_actions)]).T
+
         for d in range(dropout_iterations):
             action_values = self.value_func.predict_stochastic([state], drop_prob)[0]
             action_values = np.array([action_values]).T

@@ -7,17 +7,18 @@ from utils import *
 from ReplayMemory import ReplayMemory
 from agents import AgentEpsGreedy
 from valuefunctions import ValueFunctionDQN
-# from valuefunctions import ValueFunctionDQN3
+from valuefunctions import ValueFunctionDQN_TEST_TRAIN_DROPOUT
+
 from lib import plotting
 
+
 discount = 0.9
-decay_eps = 0.99999
+decay_eps = 0.9
 batch_size = 64
-max_n_ep = 2000    #originally defined! Don't change this.
+max_n_ep = 1000    #originally defined! Don't change this.
 
 min_avg_Rwd = 200000000  # Minimum average reward to consider the problem as solved
 n_avg_ep = 100      # Number of consecutive episodes to calculate the average reward
-
 
 
 def run_episode(env,
@@ -26,6 +27,7 @@ def run_episode(env,
                 memory,
                 batch_size,
                 discount,
+                dropout_probability,
                 max_step=10000):
     state = env.reset()
     if state_normalizer is not None:
@@ -52,8 +54,8 @@ def run_episode(env,
                                       loss_v))
         if done:
             break
-        
-        action = agent.act_boltzmann(state)
+
+        action = agent.get_action_stochastic_Epsilon_Thompson_Sampling(state, dropout_probability)
 
         #take a, get s' and reward
         state_next, reward, done, info = env.step(action)
@@ -73,8 +75,7 @@ def run_episode(env,
             states_n_b = np.array(states_n_b)
             done_b = np.array(done_b).astype(int)
 
-            #agent arrives at next state s'
-            #compute action values on the next state Q(s', a)
+
             q_n_b = agent.predict_q_values(states_n_b)  # Action values on the arriving state
 
             #target - Q-learning here - taking max_a over Q(s', a)
@@ -92,44 +93,41 @@ def run_episode(env,
             train_duration_s[i - batch_size] = time.time() - t_train
 
 
-
         state = copy.copy(state_next)
         step_durations_s[i] = time.time() - t  # Time elapsed during this step
         step_length = time.time() - t
-
-
 
     return loss_v, w1_m, w2_m, w3_m, total_reward, step_length
 
 
 
 
-# env = gym.make("MountainCar-v0")
+
 env = gym.make("CartPole-v0")
 
 n_actions = env.action_space.n
 state_dim = env.observation_space.high.shape[0]
 
-#using a smaller network for the value function
+
 
 max_n_ep = 2000      #number of episodes
-#max_step - number of steps within an episode
-
 
 Experiments = 1
-
 Experiments_All_Rewards = np.zeros(shape=(max_n_ep))
 
+
+
 for e in range(Experiments):
+    
+  
+    #using a smaller network for the value function
+    value_function = ValueFunctionDQN_TEST_TRAIN_DROPOUT(state_dim=state_dim, n_actions=n_actions, batch_size=batch_size)
 
+    epsilon_parameter = 0.3
 
-    value_function = ValueFunctionDQN(state_dim=state_dim, n_actions=n_actions, batch_size=batch_size)
-
-    epsilon_parameter = 0.1
     agent = AgentEpsGreedy(n_actions=n_actions, value_function_model=value_function, eps=epsilon_parameter)
     memory = ReplayMemory(max_size=100000)
 
-    
     print('Experiment Number ', e)
 
     print "Epsilon Parameter : ", e
@@ -141,6 +139,7 @@ for e in range(Experiments):
     w3_m_per_ep = []
     total_reward = []
 
+    dropout_probability = 0.9
 
     ep = 0
     avg_Rwd = -np.inf
@@ -156,14 +155,16 @@ for e in range(Experiments):
             print("EPISODE {}.".format(ep))
 
 
-        loss_v, w1_m, w2_m, w3_m, cum_R, step_length = run_episode(env, agent, None, memory, batch_size=batch_size, discount=discount,
+        loss_v, w1_m, w2_m, w3_m, cum_R, step_length = run_episode(env, agent, None, memory, batch_size=batch_size, discount=discount, dropout_probability=dropout_probability, 
                                                       max_step=10000)
         print(episode_end_msg.format(loss_v, w1_m, w2_m, w3_m, cum_R))
 
         stats.episode_rewards[ep] = cum_R
         stats.episode_lengths[ep] = step_length
 
-        if agent.eps > 0.1:
+
+
+        if agent.eps > 0.0001:
              agent.eps *= decay_eps
 
         # Collect episode results
@@ -178,7 +179,7 @@ for e in range(Experiments):
     Experiments_All_Rewards = Experiments_All_Rewards + total_reward
     episode_length_over_time = stats.episode_lengths
 
-    np.save('/Users/Riashat/Documents/PhD_Research/BASIC_ALGORITHMS/My_Implementations/Exploration_DQN/All_Results/'  + 'Cum_Rwd_' + 'Boltzmann_Exploration_' + str(e) + '.npy', total_reward)
+    np.save('/Users/Riashat/Documents/PhD_Research/BASIC_ALGORITHMS/My_Implementations/Exploration_DQN/All_Results/'  + 'Cum_Rwd_' + 'Dropout_Epsilon_Thompson_Sampling_' + str(e) + '.npy', total_reward)
 
 env.close()
 
@@ -186,10 +187,10 @@ print('Saving Average Cumulative Rewards Over Experiments')
 
 Average_Cum_Rwd = np.divide(Experiments_All_Rewards, Experiments)
 
-np.save('/Users/Riashat/Documents/PhD_Research/BASIC_ALGORITHMS/My_Implementations/Exploration_DQN/All_Results/'   + 'Average_Cum_Rwd_' + 'Boltzmann_Exploration_' + '.npy', Average_Cum_Rwd)
+np.save('/Users/Riashat/Documents/PhD_Research/BASIC_ALGORITHMS/My_Implementations/Exploration_DQN/All_Results/'   + 'Average_Cum_Rwd_' + 'Dropout_Epsilon_Thompson_Sampling_' +  '.npy', Average_Cum_Rwd)
 
 
 print "All Experiments DONE - Deep Q Learning"
+print "Done - Dropout Epsilon Greedy"
 
 
-print "Boltzmann Exploration DONE"
