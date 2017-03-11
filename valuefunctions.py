@@ -37,14 +37,15 @@ class ValueFunctionDQN_TEST_TRAIN_DROPOUT:
             # Interconnection of the various ANN nodes
             self.train_prediction = self.model(self.train_data)
 
-            self.eval_train_prediction = self.model(self.eval_train_data)
+            self.eval_train_prediction = self.model_stochastic(self.eval_train_data, self.dropout_keep_prob)
 
-            self.eval_valid_prediction = self.model(self.eval_valid_data)
+            self.eval_valid_prediction = self.model_stochastic(self.eval_valid_data, self.dropout_keep_prob)
 
 
 
             # Training calculations - squared difference between the TD Target and TD Predictions
             self.loss = tf.reduce_mean(tf.squared_difference(self.train_targets, self.train_prediction))
+
             self.eval_train_loss = tf.reduce_mean(tf.squared_difference(self.eval_train_targets, self.eval_train_prediction))
             self.eval_valid_loss = tf.reduce_mean(tf.squared_difference(self.eval_valid_targets, self.eval_valid_prediction))
 
@@ -76,6 +77,19 @@ class ValueFunctionDQN_TEST_TRAIN_DROPOUT:
         hidden2 = tf.nn.relu(logits2)  # Define units of layer
 
         out_layer = tf.matmul(hidden2, self.l3_weights) + self.l3_biases
+
+        return out_layer
+
+    #model with stochastic forward passes - used during batch train/valid split 
+    #only for applying MC Dropout
+    def model_stochastic(self, data, dropout_prob):
+        logits1 = tf.matmul(data, self.l1_weights) + self.l1_biases
+        hidden1 = tf.nn.relu(logits1)  # Define units of layer
+        drop_out = tf.nn.dropout(hidden1, dropout_prob)
+        logits2 = tf.matmul(hidden1, self.l2_weights) + self.l2_biases
+        hidden2 = tf.nn.relu(logits2)  # Define units of layer
+        drop_out2 = tf.nn.dropout(hidden2, dropout_prob)        
+        out_layer = tf.matmul(drop_out2, self.l3_weights) + self.l3_biases
 
         return out_layer
 
@@ -137,33 +151,6 @@ class ValueFunctionDQN_TEST_TRAIN_DROPOUT:
 
 
     #WRONG HERE - this is training on the validation data
-    def eval_valid(self, states, targets, dropout_probability):
-
-        self.init_tf_session()  # Make sure the Tensorflow session exists
-
-
-        #applying dropout to DQN during training
-        feed_dict = {self.eval_valid_data: states, self.eval_valid_targets: targets, self.dropout_keep_prob : dropout_probability}
-        [l, _, w1_m, w2_m, w3_m] = self.session.run([self.eval_valid_loss, self.eval_valid_optimizer, self.w1_max, self.w2_max, self.w3_max],
-                                                    feed_dict=feed_dict)
-        return [l, w1_m, w2_m, w3_m]
-
-
-
-    def eval_valid_trial(self, states, targets, dropout_probability):
-
-        self.init_tf_session()  # Make sure the Tensorflow session exists
-
-
-        #applying dropout to DQN during training
-        feed_dict = {self.eval_valid_data: states, self.eval_valid_targets: targets, self.dropout_keep_prob : dropout_probability}
-        [l] = self.session.run([self.eval_valid_loss],
-                                                    feed_dict=feed_dict)
-        return [l]
-
-
-
-
     # def eval_valid(self, states, targets, dropout_probability):
 
     #     self.init_tf_session()  # Make sure the Tensorflow session exists
@@ -171,11 +158,21 @@ class ValueFunctionDQN_TEST_TRAIN_DROPOUT:
 
     #     #applying dropout to DQN during training
     #     feed_dict = {self.eval_valid_data: states, self.eval_valid_targets: targets, self.dropout_keep_prob : dropout_probability}
-    #     [l] = self.session.run([self.eval_valid_loss], feed_dict=feed_dict)
-    #     return [l]
+    #     [l, _, w1_m, w2_m, w3_m] = self.session.run([self.eval_valid_loss, self.eval_valid_optimizer, self.w1_max, self.w2_max, self.w3_max],
+    #                                                 feed_dict=feed_dict)
+    #     return [l, w1_m, w2_m, w3_m]
 
 
 
+    def eval_valid(self, states, targets, dropout_probability):
+
+        self.init_tf_session()  # Make sure the Tensorflow session exists
+
+
+        #applying dropout to DQN during training
+        feed_dict = {self.eval_valid_data: states, self.eval_valid_targets: targets, self.dropout_keep_prob : dropout_probability}
+        [l] = self.session.run([self.eval_valid_loss], feed_dict=feed_dict)
+        return [l]
 
 
 

@@ -205,7 +205,7 @@ def run_episode(env,
                     d_train_loss_v, _, _, _ = agent.eval_train(train_states_b, train_targets, drop_prob)
                     d_all_train_loss = np.append(d_all_train_loss, d_train_loss_v)
 
-                    d_valid_loss_v, _, _, _ = agent.eval_valid(valid_states_b, valid_targets, drop_prob)   
+                    d_valid_loss_v = agent.eval_valid(valid_states_b, valid_targets, drop_prob)   
                     d_all_valid_loss = np.append(d_all_valid_loss_v, d_valid_loss_v)
 
                 mean_d_all_train_loss = np.mean(d_all_train_loss[1:])
